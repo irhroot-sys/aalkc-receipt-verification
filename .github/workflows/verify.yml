@@ -1,0 +1,19 @@
+name: Receipt verification checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify cryptographic acceptance and rejection
+        run: node --test verify.test.mjs
+      - name: Build production Cloudflare Worker
+        run: node scripts/build-worker.mjs
+      - name: Syntax-check Cloudflare Worker
+        run: node --check dist/worker.js

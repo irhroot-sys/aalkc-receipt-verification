@@ -1,6 +1,20 @@
 # verify.aalkc.com
 
-Static HTTPS receipt verifier. Deploy this directory as the site root and connect `verify.aalkc.com` using the hosting provider's DNS instructions. No backend, analytics, external scripts or private signing keys are required.
+## Production hosting — 25 October 2026
+
+Production URL: https://verify.aalkc.com/  
+GitHub source: https://github.com/irhroot-sys/aalkc-receipt-verification  
+Cloudflare Worker: `aalkc-receipt-verify` (custom domain `verify.aalkc.com`, `aalkc.com` zone).
+
+Cloudflare serves a **bundled copy** of the audited GitHub source. Cloudflare manages DNS for this hostname using a proxied `AAAA` record with the Worker custom domain. Do not replace it with a GitHub Pages CNAME while the Worker is attached. The standalone GitHub Pages site is not the production HTTPS endpoint.
+
+**To publish a source or trust-registry update:** run `node --test verify.test.mjs`, `node scripts/build-worker.mjs`, and `node --check dist/worker.js`, then redeploy `dist/worker.js` to the Cloudflare Worker. Pushing to GitHub alone will NOT update the live Worker.
+
+**Signing key registration:** unlock the AALKC macOS app vault, open Receipt QR Verification, choose **Copy Public Signing Key**, independently match the public key to the intended production signer and exact `company`, `vat`, and `cr` values used by Swift, then populate `trusted-keys.json`. The initial empty registry is fail-closed: no signer is trusted until registered. Never publish the private key.
+
+---
+
+Static HTTPS receipt verifier. The public hostname is routed to the Cloudflare Worker described above; GitHub stores the versioned source. No backend, analytics, external scripts or private signing keys are required.
 
 ## Before publishing
 
