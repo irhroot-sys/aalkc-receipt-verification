@@ -6,7 +6,7 @@ const token=new URLSearchParams(location.hash.slice(1)).get('r');
 async function run(){
   if(!token){status.textContent='Scan your receipt QR';message.textContent='Open this page using the QR printed on your AALKC receipt.';return;}
   try{
-    const response=await fetch('./trusted-keys.json',{cache:'no-store',credentials:'omit'});
+    const response=await fetch(`./trusted-keys.json?nonce=${Date.now()}`,{cache:'no-store',credentials:'omit'});
     if(!response.ok)throw new Error('Registry unavailable');
     const registry=await response.json();
     if(!Array.isArray(registry.keys))throw new Error('Invalid registry');
