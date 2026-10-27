@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>AALKC · Receipt verification</title>
+  <title>AALKC · Document verification</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
-    <header><span class="brand">AALKC</span><span>Receipt verification</span></header>
+    <header><span class="brand">AALKC</span><span>Document verification</span></header>
     <section>
       <p class="eyebrow">AMANAT AL-KALIMA COMPANY</p>
-      <h1 id="status" role="status" aria-live="polite">Checking receipt…</h1>
+      <h1 id="status" role="status" aria-live="polite">Checking document…</h1>
       <p id="message">Verifying the digital signature.</p>
       <dl id="details" hidden></dl>
-      <p class="note">Compare these signed details with your receipt. Verification confirms the signed snapshot; it does not confirm current payment status or whether a newer receipt exists.</p>
+      <p class="note">Compare these signed details with your printed document. Verification confirms the signed snapshot; it does not confirm current payment status or whether a newer document exists.</p>
     </section>
-    <footer>Receipt signatures are checked locally in your browser; receipt details are not uploaded.</footer>
+    <footer>Signatures are checked in your browser; document details are not uploaded.</footer>
   </main>
   <script type="module" src="app.mjs"></script>
 </body>

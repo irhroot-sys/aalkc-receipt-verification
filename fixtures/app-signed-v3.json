@@ -1,0 +1,64 @@
+{
+  "tokens" : [
+    {
+      "fields" : {
+        "amount" : "250.5",
+        "category" : "Advance",
+        "company" : "Test Company",
+        "cr" : "7050308233",
+        "currency" : "SAR",
+        "date" : "2026-10-27",
+        "kind" : "receipt",
+        "notes" : "Explanation",
+        "number" : "REC-2",
+        "party" : "Sample Payee",
+        "status" : "Paid",
+        "vat" : "312345678900003"
+      },
+      "kind" : "receipt",
+      "token" : "eyJkaWdlc3QiOiJYUTlNbHI0OEc4NHBsZDdOWVU3K0dNanVtQWFXMDJcL0dGSDlRbnhLb0dFWT0iLCJwYXlsb2FkIjoiZXlKaGJXOTFiblFpT2lJeU5UQXVOU0lzSW1OaGRHVm5iM0o1SWpvaVFXUjJZVzVqWlNJc0ltTnZiWEJoYm5raU9pSlVaWE4wSUVOdmJYQmhibmtpTENKamNpSTZJamN3TlRBek1EZ3lNek1pTENKamRYSnlaVzVqZVNJNklsTkJVaUlzSW1SaGRHVWlPaUl5TURJMkxURXdMVEkzSWl3aWEybHVaQ0k2SW5KbFkyVnBjSFFpTENKdWIzUmxjeUk2SWtWNGNHeGhibUYwYVc5dUlpd2liblZ0WW1WeUlqb2lVa1ZETFRJaUxDSndZWEowZVNJNklsTmhiWEJzWlNCUVlYbGxaU0lzSW5OMFlYUjFjeUk2SWxCaGFXUWlMQ0oyWVhRaU9pSXpNVEl6TkRVMk56ZzVNREF3TURNaWZRPT0iLCJwdWJsaWNLZXkiOiIxdDVlWFJjV204UG1PQ0NFYWdxUUsyYkNGY0JjQ3M5aFI3eGI1TVFjU1FFM00wdThoRk9uODB6WXhINklndUVSRTR3WUhcL05aajh3MVkzS3RNMlNUQmc9PSIsInNpZ25hdHVyZSI6ImxrR3hrMWpMU2M3d01xak9rYnp1WjZOQW45XC9CTytrRE1GaXFtYmttVXNcL1ZVVEUzTXltTnFNVkJSU0dwS1lUZndGVTlUN1pnVXRCUFJac3I4NkZSWEE9PSIsInZlcnNpb24iOjN9"
+    },
+    {
+      "fields" : {
+        "amount" : "11500",
+        "company" : "Test Company",
+        "cr" : "7050308233",
+        "currency" : "SAR",
+        "date" : "2026-10-27",
+        "kind" : "quotation",
+        "number" : "QUO-7",
+        "party" : "Energia",
+        "status" : "Sent",
+        "subject" : "Supply of panels",
+        "validUntil" : "2026-11-26",
+        "vat" : "312345678900003"
+      },
+      "kind" : "quotation",
+      "token" : "eyJkaWdlc3QiOiJDbno1N213OFYzWkswMTNoM1BvMU05UjNhRTVVVXk0RUxCUyt2enhtUm5ZPSIsInBheWxvYWQiOiJleUpoYlc5MWJuUWlPaUl4TVRVd01DSXNJbU52YlhCaGJua2lPaUpVWlhOMElFTnZiWEJoYm5raUxDSmpjaUk2SWpjd05UQXpNRGd5TXpNaUxDSmpkWEp5Wlc1amVTSTZJbE5CVWlJc0ltUmhkR1VpT2lJeU1ESTJMVEV3TFRJM0lpd2lhMmx1WkNJNkluRjFiM1JoZEdsdmJpSXNJbTUxYldKbGNpSTZJbEZWVHkwM0lpd2ljR0Z5ZEhraU9pSkZibVZ5WjJsaElpd2ljM1JoZEhWeklqb2lVMlZ1ZENJc0luTjFZbXBsWTNRaU9pSlRkWEJ3YkhrZ2IyWWdjR0Z1Wld4eklpd2lkbUZzYVdSVmJuUnBiQ0k2SWpJd01qWXRNVEV0TWpZaUxDSjJZWFFpT2lJek1USXpORFUyTnpnNU1EQXdNRE1pZlE9PSIsInB1YmxpY0tleSI6IjF0NWVYUmNXbThQbU9DQ0VhZ3FRSzJiQ0ZjQmNDczloUjd4YjVNUWNTUUUzTTB1OGhGT244MHpZeEg2SWd1RVJFNHdZSFwvTlpqOHcxWTNLdE0yU1RCZz09Iiwic2lnbmF0dXJlIjoiUnBnS0FBTkg3M0oyWjFvU0hYTkptcW53bEpOclFZZnRWQXptZzRwVGdRRnQ1dGhyZmswOGowa211ZE5PYVwvbnhnUnR2N3BSXC9lbnl1K0JcL3VQQzNzOHc9PSIsInZlcnNpb24iOjN9"
+    },
+    {
+      "fields" : {
+        "amount" : "80.5",
+        "category" : "Fuel",
+        "company" : "Test Company",
+        "cr" : "7050308233",
+        "currency" : "SAR",
+        "date" : "2026-10-27",
+        "kind" : "voucher",
+        "notes" : "Site visit",
+        "number" : "EXP-9",
+        "party" : "Fuel Station",
+        "status" : "Paid",
+        "vat" : "312345678900003"
+      },
+      "kind" : "voucher",
+      "token" : "eyJkaWdlc3QiOiJqaW51ZXNwQmpLN1hscjlobmliaDYwYWdpTUViaGlZU1wvclJjbGhZbmRlZz0iLCJwYXlsb2FkIjoiZXlKaGJXOTFiblFpT2lJNE1DNDFJaXdpWTJGMFpXZHZjbmtpT2lKR2RXVnNJaXdpWTI5dGNHRnVlU0k2SWxSbGMzUWdRMjl0Y0dGdWVTSXNJbU55SWpvaU56QTFNRE13T0RJek15SXNJbU4xY25KbGJtTjVJam9pVTBGU0lpd2laR0YwWlNJNklqSXdNall0TVRBdE1qY2lMQ0pyYVc1a0lqb2lkbTkxWTJobGNpSXNJbTV2ZEdWeklqb2lVMmwwWlNCMmFYTnBkQ0lzSW01MWJXSmxjaUk2SWtWWVVDMDVJaXdpY0dGeWRIa2lPaUpHZFdWc0lGTjBZWFJwYjI0aUxDSnpkR0YwZFhNaU9pSlFZV2xrSWl3aWRtRjBJam9pTXpFeU16UTFOamM0T1RBd01EQXpJbjA9IiwicHVibGljS2V5IjoiMXQ1ZVhSY1dtOFBtT0NDRWFncVFLMmJDRmNCY0NzOWhSN3hiNU1RY1NRRTNNMHU4aEZPbjgwell4SDZJZ3VFUkU0d1lIXC9OWmo4dzFZM0t0TTJTVEJnPT0iLCJzaWduYXR1cmUiOiJQVk5KZWsybXFYXC8yTmdYeU9YTW9kMTh0MkxVSm5qR2hLUnZpMzVpMWhxVSs2azljYnhNczZwSXZCaFwvbEljTW9EK3dRV1FPXC9JR2V4ZThhSlhKaEV5UT09IiwidmVyc2lvbiI6M30"
+    }
+  ],
+  "trustedKey" : {
+    "company" : "Test Company",
+    "cr" : "7050308233",
+    "publicKey" : "1t5eXRcWm8PmOCCEagqQK2bCFcBcCs9hR7xb5MQcSQE3M0u8hFOn80zYxH6IguERE4wYH\/NZj8w1Y3KtM2STBg==",
+    "vat" : "312345678900003"
+  }
+}

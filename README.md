@@ -1,35 +1,34 @@
 # verify.aalkc.com
 
-## Production hosting — 25 October 2026
+Static verifier for AALKC **receipts, quotations and payment vouchers** signed by the Aalkc macOS app. Tax invoices and tax credit notes never carry this QR; they carry only the ZATCA Phase 1 QR. The app stays offline: it signs on the Mac, and checking happens in the visitor's browser.
+
+The page source, tests and protocol notes live in the Aalkc app repository (`ReceiptVerificationWebsite/`). `script/publish_verify_site.sh /path/to/this/checkout` copies them here, runs the tests, builds the Worker and smoke-tests it.
+
+## Production hosting
 
 Production URL: https://verify.aalkc.com/  
-GitHub source: https://github.com/irhroot-sys/aalkc-receipt-verification  
 Cloudflare Worker: `aalkc-receipt-verify` (custom domain `verify.aalkc.com`, `aalkc.com` zone).
 
-Cloudflare serves a **bundled copy** of the audited GitHub source. Cloudflare manages DNS for this hostname using a proxied `AAAA` record with the Worker custom domain. Do not replace it with a GitHub Pages CNAME while the Worker is attached. The standalone GitHub Pages site is not the production HTTPS endpoint.
+Cloudflare serves a **bundled copy** of this repository (`dist/worker.js`) with the security headers in `scripts/build-worker.mjs`. Cloudflare manages DNS for this hostname with a proxied record for the Worker custom domain. Do not replace it with a GitHub Pages CNAME while the Worker is attached.
 
-**To publish a source or trust-registry update:** run `node --test verify.test.mjs`, `node scripts/build-worker.mjs`, and `node --check dist/worker.js`, then redeploy `dist/worker.js` to the Cloudflare Worker. Pushing to GitHub alone will NOT update the live Worker.
+**To publish an update:** `node --test verify.test.mjs`, `node scripts/build-worker.mjs`, `node --check dist/worker.js`, then redeploy `dist/worker.js` to the Worker (`wrangler deploy dist/worker.js --name aalkc-receipt-verify`, or Cloudflare dashboard › Workers › aalkc-receipt-verify › Edit code › paste › Deploy). Pushing to GitHub alone does NOT update the live site.
 
-**Signing key registration:** unlock the AALKC macOS app vault, open Receipt QR Verification, choose **Copy Public Signing Key**, independently match the public key to the intended production signer and exact `company`, `vat`, and `cr` values used by Swift, then populate `trusted-keys.json`. The initial empty registry is fail-closed: no signer is trusted until registered. Never publish the private key.
+## Trusted signing keys
 
----
+1. In Aalkc: **Settings › Security › Export verification key…**. This saves `trusted-keys.json` with this Mac's public key once per company, using the exact `company`, `vat` and `cr` values the documents carry.
+2. Replace `trusted-keys.json` here with it, rebuild and redeploy.
 
-Static HTTPS receipt verifier. The public hostname is routed to the Cloudflare Worker described above; GitHub stores the versioned source. No backend, analytics, external scripts or private signing keys are required.
+The committed registry may be empty; then no signer is trusted (fail closed). Only register a key you exported from your own Aalkc. Never register a key just because a document contains it, and never publish a private key. Disable a compromised key with `enabled:false`. Keep old keys if documents printed with them should still verify.
 
-## Before publishing
+## Protocol
 
-Populate `trusted-keys.json` with the real public signing key from the unlocked Aalkc installation and its approved company identity:
+The QR opens `https://verify.aalkc.com/#r=TOKEN`. The fragment is not sent to the server, but anyone holding the QR can read the signed details, just as they can read the paper. Verification confirms the signed snapshot, not current payment or revocation status.
 
-```json
-{"keys":[{"publicKey":"BASE64_CRYPTOKIT_RAW_PUBLIC_KEY","company":"EXACT_COMPANY_NAME","vat":"EXACT_VAT_OR_EMPTY","cr":"EXACT_CR_OR_EMPTY","enabled":true}]}
-```
+Base64url JSON envelope `{version, payload, digest, signature, publicKey}` (inner values standard base64). SHA-256 hashes the exact `payload` bytes (never reserialise). P-256/SHA-256 signs the UTF-8 domain string followed by the 32-byte digest. CryptoKit public keys are 64-byte X||Y; WebCrypto adds the SEC1 `04` prefix.
 
-Independently confirm the public key belongs to the company. Never register a key merely because a receipt contains it. The empty registry deliberately verifies no issuer. Private keys remain in the app vault. Disable a compromised key with `enabled:false`; keep old approved keys if historical receipts should remain verifiable.
+- **v3 (current):** domain `AALKC-DOCUMENT-SIGNATURE-V3\n`; payload strings `kind` (`receipt` | `quotation` | `voucher`), `company`, `vat`, `cr`, `number`, `date`, `party`, `amount`, `currency` (`SAR`), plus receipt `category` `status` `notes`; quotation `validUntil` `status` `subject`; voucher `category` `status` `notes`.
+- **v2 (receipts printed before v3):** domain `AALKC-RECEIPT-SIGNATURE-V2\n`, receipt fields with `payee`. Still accepted.
 
-The QR opens `https://verify.aalkc.com/#r=TOKEN`. The fragment is not sent to the web server. It contains the receipt details, digest, public key and signature, so anyone with the QR can read those details. Browser verification confirms an issued snapshot, not current payment/revocation status. Users must compare the displayed details with the printed document.
+## Tests
 
-Protocol v2: base64url-encoded JSON envelope, with `version:2` and standard-base64 `payload`, `digest`, `signature`, `publicKey`. SHA-256 hashes the exact payload bytes. P-256/SHA-256 signs UTF-8 `AALKC-RECEIPT-SIGNATURE-V2\n` followed by the 32-byte digest. CryptoKit uses 64-byte X||Y public keys and 64-byte r||s signatures; WebCrypto adds the SEC1 04 prefix when importing the key. Never reserialize the payload before hashing it.
-
-Serve over HTTPS with `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`. Do not cache the trust registry.
-
-Run verification checks with `node --test verify.test.mjs`.
+`node --test verify.test.mjs`. `fixtures/app-signed-v3.json` holds tokens signed by the Aalkc app itself, so the browser verifier is checked against real CryptoKit output.
