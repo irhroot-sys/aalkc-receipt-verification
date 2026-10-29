@@ -1,1 +1,11 @@
-{"keys":[]}
+{
+  "keys" : [
+    {
+      "company" : "Amanat Al-Kalima Company",
+      "cr" : "7050308233",
+      "enabled" : true,
+      "publicKey" : "LStg76kw1E27qzzSdaudFAZ64idSFUtNc/Snt0TOxCAOVXJazlpicFcKT9R+W+W/6lxA6Nq2pVIWJESimFNfmA==",
+      "vat" : "313054315200003"
+    }
+  ]
+}
