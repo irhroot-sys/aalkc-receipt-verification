@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build a premium AALKC business-document PDF on the original letterhead."""
+"""Build an executive-grade AALKC × HMS Arabic business-document PDF.
+
+Uses each document's exact original letterhead:
+  - AALKC letterhead → FW, DEC, EMP, COST
+  - HMS letterhead   → EA, AUTH, WP
+"""
 
 from __future__ import annotations
 
@@ -13,31 +18,49 @@ OUT_HTML = ROOT / "premium_documents.html"
 OUT_PDF = ROOT / "AALKC_HMS_7_Business_Documents_Premium_Arabic.pdf"
 ARTIFACT = Path("/opt/cursor/artifacts/AALKC_HMS_7_Business_Documents_Premium_Arabic.pdf")
 
-NAVY = "#0A2745"
-NAVY_SOFT = "#1B3A5A"
-SLATE = "#3D4F63"
-MUTED = "#6B7C8F"
-RULE = "#D5DEE8"
-GOLD = "#A8895A"
-BG_TINT = "rgba(10, 39, 69, 0.035)"
+# Brand tokens
+AALKC = {
+    "primary": "#0E335D",
+    "primary_soft": "#1A4A78",
+    "slate": "#3A4B5C",
+    "muted": "#6B7C8F",
+    "rule": "#D5DEE8",
+    "accent": "#A8895A",
+    "tint": "rgba(14, 51, 93, 0.035)",
+    "panel": "linear-gradient(180deg, rgba(14,51,93,0.045), rgba(14,51,93,0.015))",
+}
+HMS = {
+    "primary": "#0081A9",
+    "primary_soft": "#0A6F92",
+    "slate": "#2F3A42",
+    "muted": "#5F6E78",
+    "rule": "#D2DEE4",
+    "accent": "#4A5560",
+    "tint": "rgba(0, 129, 169, 0.04)",
+    "panel": "linear-gradient(180deg, rgba(0,129,169,0.05), rgba(0,129,169,0.012))",
+}
 
 
-def letterhead_data_uri() -> str:
-    data = (ASSETS / "letterhead.jpg").read_bytes()
-    return "data:image/jpeg;base64," + base64.b64encode(data).decode("ascii")
+def data_uri(path: Path) -> str:
+    return "data:image/jpeg;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
-def meta_row(label: str, value: str) -> str:
-    return f"""
-    <div class="meta-row">
-      <span class="meta-value" dir="ltr">{value}</span>
-      <span class="meta-label">{label}</span>
-    </div>"""
+LH_AALKC = data_uri(ASSETS / "letterhead_aalkc.jpg")
+LH_HMS = data_uri(ASSETS / "letterhead_hms.jpg")
 
 
 def _is_arabic_heavy(text: str) -> bool:
     arabic = sum(1 for ch in text if "\u0600" <= ch <= "\u06FF")
     return arabic >= max(1, len(text) // 5)
+
+
+def meta_row(label: str, value: str) -> str:
+    # DOM order: label then value. With direction:rtl, label sits on the right.
+    return f"""
+    <div class="meta-row">
+      <span class="meta-label">{label}</span>
+      <span class="meta-value" dir="ltr">{value}</span>
+    </div>"""
 
 
 def kv_table(rows: list[tuple[str, str]]) -> str:
@@ -46,12 +69,14 @@ def kv_table(rows: list[tuple[str, str]]) -> str:
         if _is_arabic_heavy(value):
             value_html = f'<div class="kv-value kv-ar">{value}</div>'
         else:
-            value_html = f'<div class="kv-value kv-en"><span dir="ltr">{value}</span></div>'
+            value_html = (
+                f'<div class="kv-value kv-en"><span dir="ltr">{value}</span></div>'
+            )
         cells.append(
             f"""
       <div class="kv-row">
-        {value_html}
         <div class="kv-label">{label}</div>
+        {value_html}
       </div>"""
         )
     return f'<div class="kv-table">{"".join(cells)}</div>'
@@ -73,7 +98,7 @@ def bullets(items: list[str]) -> str:
 def sig_block(parties: list[tuple[str, str, str | None]]) -> str:
     cards = []
     for role, name_ar, name_en in parties:
-        en = f'<div class="sig-en">{name_en}</div>' if name_en else ""
+        en = f'<div class="sig-en" dir="ltr">{name_en}</div>' if name_en else ""
         cards.append(
             f"""
       <div class="sig-card">
@@ -83,11 +108,13 @@ def sig_block(parties: list[tuple[str, str, str | None]]) -> str:
         {en}
       </div>"""
         )
-    return f'<div class="sig-grid">{"".join(cards)}</div>'
+    cls = "sig-grid single" if len(parties) == 1 else "sig-grid"
+    return f'<div class="{cls}">{"".join(cards)}</div>'
 
 
-def page(inner: str, page_class: str = "") -> str:
-    return f'<article class="page {page_class}">{inner}</article>'
+def page(inner: str, brand: str, dense: bool = False) -> str:
+    extra = " dense" if dense else ""
+    return f'<article class="page brand-{brand}{extra}">{inner}</article>'
 
 
 def doc_header(title: str, metas: list[tuple[str, str]]) -> str:
@@ -115,11 +142,11 @@ def section_label(text: str) -> str:
     return f'<div class="section-kicker">{text}</div>'
 
 
-# ── Document content (cleaned Arabic, original meaning preserved) ────────────
+# ── Content (refined formal Arabic; meaning preserved) ──────────────────────
 
 PAGES: list[str] = []
 
-# Page 1 — Framework Agreement
+# 1 — Framework (AALKC letterhead)
 PAGES.append(
     page(
         doc_header(
@@ -130,15 +157,15 @@ PAGES.append(
             ],
         )
         + lead(
-            "أبرمت هذه الاتفاقية لتنظيم التعاون التشغيلي في استلام البضائع وإرسالها ومتابعة مستندات النقل والتسليم بين الطرفين، وتحديد آلية تكليف موظف من شركة أمانة الكلمة بالتنسيق مع شركة إتش إم إس."
+            "أُبرمت هذه الاتفاقية لتنظيم التعاون التشغيلي في استلام البضائع وإرسالها ومتابعة مستندات النقل والتسليم بين الطرفين، وتحديد آلية تكليف موظف من شركة أمانة الكلمة بالتنسيق مع شركة إتش إم إس."
         )
         + article(
             "المادة الأولى: أطراف الاتفاقية",
             p(
-                "الطرف الأول: شركة أمانة الكلمة، شركة ذات مسؤولية محدودة مسجلة في المملكة العربية السعودية، ومقرها الرئيس في الدمام، ويشار إليها فيما يلي بالشركة الأصلية."
+                "الطرف الأول: شركة أمانة الكلمة، شركة ذات مسؤولية محدودة مسجلة في المملكة العربية السعودية، ومقرها الرئيس في الدمام، ويُشار إليها فيما يلي بـ«الشركة الأصلية»."
             )
             + p(
-                "الطرف الثاني: شركة إتش إم إس هيفي ميتال المحدودة، شركة مسجلة في جمهورية بنغلاديش الشعبية، ويشار إليها فيما يلي بالشركة المستضيفة."
+                "الطرف الثاني: شركة إتش إم إس هيفي ميتال المحدودة، شركة مسجلة في جمهورية بنغلاديش الشعبية، ويُشار إليها فيما يلي بـ«الشركة المستضيفة»."
             )
             + kv_table(
                 [
@@ -157,19 +184,20 @@ PAGES.append(
                 ]
             )
             + note(
-                "يُعتمد العنوان الحالي للمراسلات التشغيلية وفق بيانات الشركة المستضيفة. ويُذكر العنوان السابق لأغراض سجل المراسلات التاريخية فحسب."
+                "يُعتمد العنوان الحالي للمراسلات التشغيلية وفق بيانات الشركة المستضيفة. ويُذكر العنوان السابق لأغراض السجل التاريخي للمراسلات فحسب."
             ),
         )
         + article(
             "المادة الثانية: نطاق التعاون",
             p(
-                "يتعاون الطرفان في تنسيق استلام وإرسال البضائع لحساب شركة أمانة الكلمة، ومراجعة بيانات الشحن والتسليم والكميات والحالة الظاهرة للبضائع، ومتابعة الجهات الناقلة والمستلمة في حدود العمليات المعتمدة من إدارة أمانة الكلمة."
+                "يتعاون الطرفان في تنسيق استلام وإرسال البضائع لحساب شركة أمانة الكلمة، ومراجعة بيانات الشحن والتسليم والكميات والحالة الظاهرة للبضائع، ومتابعة الجهات الناقلة والمستلمة، وذلك في حدود العمليات المعتمدة من إدارة أمانة الكلمة."
             ),
-        )
+        ),
+        "aalkc",
     )
 )
 
-# Page 2 — Framework continued
+# 2 — Framework continued (AALKC)
 PAGES.append(
     page(
         p(
@@ -178,7 +206,7 @@ PAGES.append(
         + article(
             "المادة الثالثة: التكليف الوظيفي والمواقع",
             p(
-                "يجوز تكليف موظف تابع لشركة أمانة الكلمة بتنفيذ مهام التنسيق والاستلام والإرسال وفق ملحق فردي مستقل. ويظل مقر عمله الأصلي في المنطقة الصناعية بالدمام، مع تكليفه عند الحاجة بزيارات عمل إلى بنغلاديش للتنسيق الميداني مع شركة إتش إم إس."
+                "يجوز تكليف موظف تابع لشركة أمانة الكلمة بتنفيذ مهام التنسيق والاستلام والإرسال وفق ملحق فردي مستقل. ويظل مقر عمله الأصلي في المنطقة الصناعية بالدمام، مع تكليفه — عند الحاجة — بزيارات عمل إلى بنغلاديش للتنسيق الميداني مع شركة إتش إم إس."
             )
             + p(
                 "تُحدَّد مواقع الاستلام والإرسال الفعلية لكل مهمة بموجب خطة عمل مستقلة، ولا يُفترض أن عنوان مراسلات الشركة المستضيفة هو موقع المستودع أو التسليم."
@@ -190,7 +218,7 @@ PAGES.append(
                 [
                     "تصدر أمانة الكلمة أوامر حركة بضائعها، وتعتمد التكاليف ونتائج المطابقة والقبول النهائي.",
                     "تنسق إتش إم إس استقبال الموظف والوصول إلى المواقع المتاحة ضمن أعمالها، وتوثق الوقائع الميدانية التي تقع في نطاقها.",
-                    "يرفع الموظف تقارير الاستلام والإرسال والملاحظات والفروق دون أن يملك إبرام عقود بيع أو شراء أو نقل ملكية البضائع أو إجراء مدفوعات دون تفويض مستقل.",
+                    "يرفع الموظف تقارير الاستلام والإرسال والملاحظات والفروق، دون أن يملك إبرام عقود بيع أو شراء أو نقل ملكية البضائع أو إجراء مدفوعات إلا بتفويض مستقل.",
                 ]
             ),
         )
@@ -209,19 +237,20 @@ PAGES.append(
         + article(
             "المادة السابعة: مدة الاتفاقية وإنهاؤها",
             p(
-                "تسري الاتفاقية من تاريخ اعتمادها من الطرفين، وتستمر حتى إنهائها باتفاق مكتوب أو بإشعار سابق مدته ستون يومًا. وتُحدَّد مدة تكليف الموظف على حدة في ملحقه الفردي، ويكون تمديده مكتوبًا."
+                "تسري الاتفاقية من تاريخ اعتمادها من الطرفين، وتستمر حتى إنهائها باتفاق مكتوب أو بإشعار سابق مدته ستون (60) يومًا. وتُحدَّد مدة تكليف الموظف على حدة في ملحقه الفردي، ويكون أي تمديد لها مكتوبًا."
             ),
-        )
+        ),
+        "aalkc",
     )
 )
 
-# Page 3 — Framework closing
+# 3 — Framework closing (AALKC)
 PAGES.append(
     page(
         article(
             "المادة الثامنة: السرية وحدود التفويض",
             p(
-                "يحافظ الطرفان على سرية معلومات العمليات والأسعار والموردين والمستندات الداخلية. ولا يجوز لأي طرف إلزام الآخر ماليًا أو تعاقديًا إلا بموافقة صريحة مستقلة من الجهة المخولة."
+                "يحافظ الطرفان على سرية معلومات العمليات والأسعار والموردين والمستندات الداخلية. ولا يجوز لأي طرف إلزام الآخر ماليًا أو تعاقديًا إلا بموافقة صريحة مستقلة من الجهة المخوَّلة."
             ),
         )
         + article(
@@ -245,18 +274,23 @@ PAGES.append(
         )
         + section_label("الاعتماد والنفاذ")
         + p(
-            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخولين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
+            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخوَّلين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
         )
         + sig_block(
             [
-                ("عن شركة أمانة الكلمة", "شهيد الإسلام عبد الرزاق", "Shahidul Islam Abdur Razzak"),
+                (
+                    "عن شركة أمانة الكلمة",
+                    "شهيد الإسلام عبد الرزاق",
+                    "Shahidul Islam Abdur Razzak",
+                ),
                 ("عن شركة إتش إم إس", "هيميل حسن", "Himel Hasan"),
             ]
-        )
+        ),
+        "aalkc",
     )
 )
 
-# Page 4 — Employee assignment
+# 4 — Employee assignment (HMS letterhead)
 PAGES.append(
     page(
         doc_header(
@@ -287,19 +321,20 @@ PAGES.append(
                 ]
             )
             + note(
-                "تاريخ الالتحاق مذكور بحسب إفادة إدارة أمانة الكلمة. والمسمى المبين أعلاه خاص بهذا التكليف ولا يُفترض أنه يحل محل المسمى المسجل في عقد العمل الأصلي."
+                "تاريخ الالتحاق مذكور بحسب إفادة إدارة أمانة الكلمة. والمسمى المبين أعلاه خاص بهذا التكليف، ولا يُفترض أنه يحل محل المسمى المسجل في عقد العمل الأصلي."
             ),
         )
         + article(
             "ثانيًا: المسؤوليات",
             p(
-                "يتولى الموظف لحساب أمانة الكلمة متابعة استلام البضائع وإرسالها، ومطابقة أوصافها وكمياتها وحالتها الظاهرة مع المستندات المعتمدة، والتنسيق مع الناقلين وجهات التسليم والاستلام، وإعداد محاضر المتابعة التشغيلية ورفع التقارير إلى إدارة أمانة الكلمة."
+                "يتولى الموظف — لحساب أمانة الكلمة — متابعة استلام البضائع وإرسالها، ومطابقة أوصافها وكمياتها وحالتها الظاهرة مع المستندات المعتمدة، والتنسيق مع الناقلين وجهات التسليم والاستلام، وإعداد محاضر المتابعة التشغيلية ورفع التقارير إلى إدارة أمانة الكلمة."
             ),
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 5 — Assignment continued
+# 5 — Assignment continued (HMS)
 PAGES.append(
     page(
         p(
@@ -308,7 +343,7 @@ PAGES.append(
         + article(
             "ثالثًا: الموقع وآلية الزيارات",
             p(
-                "مقر العمل الأصلي للموظف هو المنطقة الصناعية بالدمام. ويشمل التكليف زيارات عمل متكررة إلى بنغلاديش بحسب العمليات الفعلية وخطط الزيارة المعتمدة. ويُحدَّد موقع كل زيارة ومواعيدها والجهة المستقبلة في أمر المهمة قبل التنفيذ."
+                "مقر العمل الأصلي للموظف هو المنطقة الصناعية بالدمام. ويشمل التكليف زيارات عمل متكررة إلى بنغلاديش بحسب العمليات الفعلية وخطط الزيارة المعتمدة. ويُحدَّد موقع كل زيارة ومواعيدها والجهة المستقبِلة في أمر المهمة قبل التنفيذ."
             )
             + kv_table(
                 [
@@ -322,7 +357,7 @@ PAGES.append(
         + article(
             "رابعًا: المدة والتجديد",
             p(
-                "المدة الأولية للتكليف اثنا عشر شهرًا تبدأ من تاريخ اعتماد هذا الملحق من الطرفين، ويجوز تمديدها باتفاق مكتوب قبل انتهائها. ولا تُحتسب هذه المدة من تاريخ بدء العمل الأصلي للموظف."
+                "المدة الأولية للتكليف اثنا عشر (12) شهرًا تبدأ من تاريخ اعتماد هذا الملحق من الطرفين، ويجوز تمديدها باتفاق مكتوب قبل انتهائها. ولا تُحتسب هذه المدة من تاريخ بدء العمل الأصلي للموظف."
             ),
         )
         + article(
@@ -339,40 +374,46 @@ PAGES.append(
             p(
                 "تتحمل أمانة الكلمة أجر الموظف ومزاياه والمصروفات المعتمدة المرتبطة بالتكليف، وفق جدول التكاليف المستقل. وتُستكمل وثائق السفر ومتطلبات الدخول والعمل المطبقة قبل مباشرة أي مهمة تستلزمها في بنغلاديش."
             ),
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 6 — Assignment closing
+# 6 — Assignment closing (HMS)
 PAGES.append(
     page(
         article(
             "سابعًا: الإنهاء",
             p(
-                "يجوز إنهاء التكليف الفردي بإشعار مكتوب مدته ثلاثون يومًا، ما لم يتفق الطرفان على خلاف ذلك. ولا يترتب على انتهاء التكليف بذاته إنهاء عقد العمل الأصلي مع أمانة الكلمة."
+                "يجوز إنهاء التكليف الفردي بإشعار مكتوب مدته ثلاثون (30) يومًا، ما لم يتفق الطرفان على خلاف ذلك. ولا يترتب على انتهاء التكليف بذاته إنهاء عقد العمل الأصلي مع أمانة الكلمة."
             ),
         )
         + article(
             "ثامنًا: إقرار الموظف",
             p(
-                "يُقر الموظف، عند اعتماده هذا الملحق، باطلاعه على المهام والمواقع وحدود الصلاحيات والالتزامات التشغيلية المقررة، دون تعديل حقوقه الثابتة في علاقة العمل الأصلية."
+                "يُقر الموظف — عند اعتماده هذا الملحق — باطلاعه على المهام والمواقع وحدود الصلاحيات والالتزامات التشغيلية المقررة، دون تعديل حقوقه الثابتة في علاقة العمل الأصلية."
             )
             + kv_table([("اسم الموظف", "سالم بن جمل بن جمعان العماري الدوسري")]),
         )
         + section_label("الاعتماد والنفاذ")
         + p(
-            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخولين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
+            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخوَّلين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
         )
         + sig_block(
             [
-                ("عن شركة أمانة الكلمة", "شهيد الإسلام عبد الرزاق", "Shahidul Islam Abdur Razzak"),
+                (
+                    "عن شركة أمانة الكلمة",
+                    "شهيد الإسلام عبد الرزاق",
+                    "Shahidul Islam Abdur Razzak",
+                ),
                 ("عن شركة إتش إم إس", "هيميل حسن", "Himel Hasan"),
             ]
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 7 — Admin decision
+# 7 — Admin decision (AALKC)
 PAGES.append(
     page(
         doc_header(
@@ -384,7 +425,7 @@ PAGES.append(
             ],
         )
         + lead(
-            "تُكلِّف شركة أمانة الكلمة الموظف المبين أدناه بمتابعة استلام بضائعها وإرسالها ضمن التعاون التشغيلي مع إتش إم إس."
+            "تُكلِّف شركة أمانة الكلمة الموظف المبين أدناه بمتابعة استلام بضائعها وإرسالها ضمن التعاون التشغيلي مع شركة إتش إم إس."
         )
         + kv_table(
             [
@@ -415,31 +456,37 @@ PAGES.append(
         + article(
             "ثانيًا: الإشراف وحدود السلطة",
             p(
-                "تحتفظ أمانة الكلمة بإدارة علاقة العمل والتكاليف واعتماد حركة البضائع. ويتولى هيميل حسن التنسيق لدى إتش إم إس بموجب تفويضها."
+                "تحتفظ أمانة الكلمة بإدارة علاقة العمل والتكاليف واعتماد حركة البضائع. ويتولى السيد هيميل حسن التنسيق لدى إتش إم إس بموجب تفويضها."
             )
             + p(
-                "لا يخول هذا القرار بيع البضائع أو شراءها أو نقل ملكيتها أو تحويل الأموال أو توقيع العقود دون تفويض مستقل."
+                "لا يخوّل هذا القرار بيع البضائع أو شراءها أو نقل ملكيتها أو تحويل الأموال أو توقيع العقود دون تفويض مستقل."
             ),
         )
         + article(
             "ثالثًا: المدة والمصروفات",
             p(
-                "يسري التكليف لمدة أولية 12 شهرًا من اعتماد ملحقه الفردي، ويجوز تمديده كتابيًا. وتتحمل أمانة الكلمة المصروفات المعتمدة."
+                "يسري التكليف لمدة أولية قدرها اثنا عشر (12) شهرًا من اعتماد ملحقه الفردي، ويجوز تمديده كتابيًا. وتتحمل أمانة الكلمة المصروفات المعتمدة."
             ),
         )
         + section_label("الاعتماد والنفاذ")
         + p(
-            "يسري هذا المستند بعد اعتماده من ممثل شركة أمانة الكلمة المخول وفق الصلاحيات المعتمدة لدى الشركة."
+            "يسري هذا المستند بعد اعتماده من ممثل شركة أمانة الكلمة المخوَّل وفق الصلاحيات المعتمدة لدى الشركة."
         )
         + sig_block(
             [
-                ("الممثل المخول", "شهيد الإسلام عبد الرزاق", "Shahidul Islam Abdur Razzak"),
+                (
+                    "الممثل المخوَّل",
+                    "شهيد الإسلام عبد الرزاق",
+                    "Shahidul Islam Abdur Razzak",
+                ),
             ]
-        )
+        ),
+        "aalkc",
+        dense=True,
     )
 )
 
-# Page 8 — HMS authorization
+# 8 — HMS authorization (HMS)
 PAGES.append(
     page(
         doc_header(
@@ -450,7 +497,7 @@ PAGES.append(
             ],
         )
         + lead(
-            "تصدر شركة إتش إم إس هيفي ميتال المحدودة هذا القرار لتنظيم مسؤولية استقبال الموظف المكلف من أمانة الكلمة والتنسيق بشأن أعماله التجارية واللوجستية في بنغلاديش، وفق الصلاحيات المؤسسية المعتمدة."
+            "تصدر شركة إتش إم إس هيفي ميتال المحدودة هذا القرار لتنظيم مسؤولية استقبال الموظف المكلَّف من أمانة الكلمة والتنسيق بشأن أعماله التجارية واللوجستية في بنغلاديش، وفق الصلاحيات المؤسسية المعتمدة."
         )
         + kv_table(
             [
@@ -465,7 +512,7 @@ PAGES.append(
                     "عنوان المراسلات السابق",
                     "House-110, Road No. 03, Adabor, Baitul Aman Housing, Dhaka-1207, Bangladesh",
                 ),
-                ("الممثل المكلف", "هيميل حسن"),
+                ("الممثل المكلَّف", "هيميل حسن"),
                 ("الاسم بالإنجليزية", "Himel Hasan"),
                 ("الموظف المستقبَل", "سالم بن جمل بن جمعان العماري الدوسري"),
             ]
@@ -475,16 +522,17 @@ PAGES.append(
             bullets(
                 [
                     "تنسيق استقبال الموظف وتوجيهه إلى مواقع العمل المحددة في خطط المهام المعتمدة.",
-                    "متابعة أعمال استلام البضائع وإرسالها التي تنفذ لصالح أمانة الكلمة ضمن العمليات المنسقة بين الشركتين.",
+                    "متابعة أعمال استلام البضائع وإرسالها التي تُنفَّذ لصالح أمانة الكلمة ضمن العمليات المنسقة بين الشركتين.",
                     "تنسيق إعداد محاضر الاستلام والتسليم وتبادل المستندات التشغيلية والتقارير مع أمانة الكلمة.",
                     "تمثيل إتش إم إس في اعتماد اتفاقية التعاون وملحق التكليف وخطة العمل وجدول التكاليف ضمن حدود التفويض الصادر من الجهة المختصة.",
                 ]
             ),
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 9 — HMS authorization closing
+# 9 — HMS authorization closing (HMS)
 PAGES.append(
     page(
         article(
@@ -507,7 +555,7 @@ PAGES.append(
         + article(
             "رابعًا: سريان القرار",
             p(
-                "يسري التفويض بعد اعتماد هذا القرار من الجهة المخولة بتمثيل إتش إم إس وفق وثائق الشركة. ويكون السيد هيميل حسن مسؤول التنسيق والاستقبال في الحدود الواردة أعلاه طوال مدة التكليف أو إلى حين تعديل التفويض بقرار لاحق."
+                "يسري التفويض بعد اعتماد هذا القرار من الجهة المخوَّلة بتمثيل إتش إم إس وفق وثائق الشركة. ويكون السيد هيميل حسن مسؤول التنسيق والاستقبال في الحدود الواردة أعلاه طوال مدة التكليف، أو إلى حين تعديل التفويض بقرار لاحق."
             ),
         )
         + section_label("الاعتماد والنفاذ")
@@ -520,15 +568,16 @@ PAGES.append(
                     "جهة الاعتماد",
                     "مجلس إدارة شركة إتش إم إس أو من يفوضه وفق وثائق الشركة",
                 ),
-                ("اسم صاحب صلاحية الاعتماد", "……………………"),
-                ("الصفة", "……………………"),
-                ("تاريخ الاعتماد", "……………………"),
+                ("اسم صاحب صلاحية الاعتماد", "………………………………"),
+                ("الصفة", "………………………………"),
+                ("تاريخ الاعتماد", "………………………………"),
             ]
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 10 — Employment certificate
+# 10 — Employment certificate (AALKC)
 PAGES.append(
     page(
         doc_header(
@@ -562,21 +611,26 @@ PAGES.append(
             "تشمل مهام الموظف متابعة استلام بضائع أمانة الكلمة وإرسالها، ومطابقة بيانات النقل والتسليم والكميات والحالة الظاهرة، والتنسيق بشأن العمليات المعتمدة مع الشركة المستضيفة في بنغلاديش. وقد تتطلب بعض المهام زيارات ميدانية إلى مواقع العمل المعتمدة وفق متطلبات العمليات والخطط الصادرة عن الشركة."
         )
         + p(
-            "مدة التكليف الأولية اثنا عشر شهرًا من تاريخ اعتماد ملحق التكليف، مع جواز تمديدها كتابيًا. وتتحمل أمانة الكلمة المصروفات المعتمدة المرتبطة بهذه المهام."
+            "مدة التكليف الأولية اثنا عشر (12) شهرًا من تاريخ اعتماد ملحق التكليف، مع جواز تمديدها كتابيًا. وتتحمل أمانة الكلمة المصروفات المعتمدة المرتبطة بهذه المهام."
         )
         + section_label("الاعتماد والنفاذ")
         + p(
-            "يسري هذا المستند بعد اعتماده من ممثل شركة أمانة الكلمة المخول وفق الصلاحيات المعتمدة لدى الشركة."
+            "يسري هذا المستند بعد اعتماده من ممثل شركة أمانة الكلمة المخوَّل وفق الصلاحيات المعتمدة لدى الشركة."
         )
         + sig_block(
             [
-                ("الممثل المخول", "شهيد الإسلام عبد الرزاق", "Shahidul Islam Abdur Razzak"),
+                (
+                    "الممثل المخوَّل",
+                    "شهيد الإسلام عبد الرزاق",
+                    "Shahidul Islam Abdur Razzak",
+                ),
             ]
-        )
+        ),
+        "aalkc",
     )
 )
 
-# Page 11 — Work plan
+# 11 — Work plan (HMS)
 PAGES.append(
     page(
         doc_header(
@@ -588,14 +642,14 @@ PAGES.append(
             ],
         )
         + lead(
-            "تنظم هذه الخطة تسلسل المهام المرتبطة بمتابعة استلام بضائع أمانة الكلمة وإرسالها، وتحديد مسؤوليات الموظف المعين والشركة المستضيفة على مستوى كل عملية أو زيارة عمل."
+            "تنظم هذه الخطة تسلسل المهام المرتبطة بمتابعة استلام بضائع أمانة الكلمة وإرسالها، وتحديد مسؤوليات الموظف المعيَّن والشركة المستضيفة على مستوى كل عملية أو زيارة عمل."
         )
         + article(
             "أولاً: إعداد المهمة",
             bullets(
                 [
                     "تصدر أمانة الكلمة أمر المهمة متضمنًا وصف البضاعة أو العملية والجهة المعنية وموقع التنفيذ والمستندات اللازمة.",
-                    "تنسق إتش إم إس مع الجهات المستقبلة أو مواقع الفحص أو التسليم داخل بنغلاديش عند الحاجة إلى زيارة ميدانية.",
+                    "تنسق إتش إم إس مع الجهات المستقبِلة أو مواقع الفحص أو التسليم داخل بنغلاديش عند الحاجة إلى زيارة ميدانية.",
                 ]
             ),
         )
@@ -604,7 +658,7 @@ PAGES.append(
             bullets(
                 [
                     "يتحقق الموظف من الوصف والكميات والحالة الظاهرة للبضائع قياسًا إلى المستندات المعتمدة.",
-                    "يثبت الفروق أو التلفيات أو غياب المستندات في تقرير يرفع إلى أمانة الكلمة قبل اتخاذ قرار القبول النهائي.",
+                    "يُثبت الفروق أو التلفيات أو غياب المستندات في تقرير يُرفع إلى أمانة الكلمة قبل اتخاذ قرار القبول النهائي.",
                 ]
             ),
         )
@@ -612,7 +666,7 @@ PAGES.append(
             "ثالثًا: الإرسال",
             bullets(
                 [
-                    "يتابع الموظف تجهيز البضاعة وبيانات الجهة المستلمة ومستندات التسليم في حدود تعليمات أمانة الكلمة.",
+                    "يتابع الموظف تجهيز البضاعة وبيانات الجهة المستلِمة ومستندات التسليم في حدود تعليمات أمانة الكلمة.",
                     "تحتفظ الشركة صاحبة العملية بسجلات الشحن والتسليم والتأكيدات الصادرة من الجهات المعنية.",
                 ]
             ),
@@ -620,19 +674,20 @@ PAGES.append(
         + article(
             "رابعًا: التقارير والإشراف",
             p(
-                "يرفع الموظف تقريرًا عن كل عملية منفذة إلى أمانة الكلمة، ويقوم السيد هيميل حسن بتنسيق المعلومات والمستندات المتعلقة بأنشطة إتش إم إس الفعلية."
+                "يرفع الموظف تقريرًا عن كل عملية منفَّذة إلى أمانة الكلمة، ويقوم السيد هيميل حسن بتنسيق المعلومات والمستندات المتعلقة بأنشطة إتش إم إس الفعلية."
             ),
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 12 — Work plan closing
+# 12 — Work plan closing (HMS)
 PAGES.append(
     page(
         article(
             "خامسًا: برنامج الزيارات",
             p(
-                "تحدد كل زيارة إلى بنغلاديش في أمر مهمة منفصل يبين الغرض والموقع والأطراف المعنية والتاريخ المتوقع والمستندات المطلوبة. ولا تحدد هذه الخطة مواعيد رحلات أو عمليات شحن بعينها قبل اعتماد أوامرها."
+                "تُحدَّد كل زيارة إلى بنغلاديش في أمر مهمة منفصل يبيّن الغرض والموقع والأطراف المعنية والتاريخ المتوقع والمستندات المطلوبة. ولا تحدّد هذه الخطة مواعيد رحلات أو عمليات شحن بعينها قبل اعتماد أوامرها."
             )
             + kv_table(
                 [
@@ -652,18 +707,23 @@ PAGES.append(
         )
         + section_label("الاعتماد والنفاذ")
         + p(
-            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخولين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
+            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخوَّلين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
         )
         + sig_block(
             [
-                ("عن شركة أمانة الكلمة", "شهيد الإسلام عبد الرزاق", "Shahidul Islam Abdur Razzak"),
+                (
+                    "عن شركة أمانة الكلمة",
+                    "شهيد الإسلام عبد الرزاق",
+                    "Shahidul Islam Abdur Razzak",
+                ),
                 ("عن شركة إتش إم إس", "هيميل حسن", "Himel Hasan"),
             ]
-        )
+        ),
+        "hms",
     )
 )
 
-# Page 13 — Cost schedule
+# 13 — Cost schedule (AALKC)
 PAGES.append(
     page(
         doc_header(
@@ -681,43 +741,66 @@ PAGES.append(
             "أولاً: توزيع فئات المصروفات",
             bullets(
                 [
-                    "الأجر والمزايا الوظيفية الأصلية",
-                    "تذاكر السفر المعتمدة ورسوم الحجز",
-                    "الإقامة أثناء الزيارات المهنية",
-                    "النقل المحلي والتنقل إلى مواقع البضائع",
-                    "التأمين المرتبط بالمهمة",
-                    "رسوم التأشيرات والتصاريح المطلوبة",
-                    "النفقات التشغيلية اللازمة والمعتمدة مسبقًا",
+                    "الأجر والمزايا الوظيفية الأصلية.",
+                    "تذاكر السفر المعتمدة ورسوم الحجز.",
+                    "الإقامة أثناء الزيارات المهنية.",
+                    "النقل المحلي والتنقل إلى مواقع البضائع.",
+                    "التأمين المرتبط بالمهمة.",
+                    "رسوم التأشيرات والتصاريح المطلوبة.",
+                    "النفقات التشغيلية اللازمة والمعتمدة مسبقًا.",
                 ]
             ),
         )
         + article(
             "ثانيًا: إجراءات الموافقة والصرف",
             p(
-                "تُدار الأجور والمزايا وفق عقد العمل ونظام الرواتب. وتُعتمد مصروفات التكليف الأخرى مسبقًا بالمستندات المؤيدة. وإذا تحملت إتش إم إس نفقة بموافقة مكتوبة من أمانة الكلمة، تُسوَّى محاسبيًا بين الطرفين."
+                "تُدار الأجور والمزايا وفق عقد العمل ونظام الرواتب. وتُعتمد مصروفات التكليف الأخرى مسبقًا بالمستندات المؤيّدة. وإذا تحمّلت إتش إم إس نفقة بموافقة مكتوبة من أمانة الكلمة، تُسوَّى محاسبيًا بين الطرفين."
             )
             + p(
-                "لا ينشئ هذا الجدول عمولة أو أتعاب خدمات مستقلة لصالح أي طرف، ولا يمنح الموظف صلاحية إجراء معاملات بنكية أو صرف مصروفات دون موافقة الإدارة."
+                "لا يُنشئ هذا الجدول عمولة أو أتعاب خدمات مستقلة لصالح أي طرف، ولا يمنح الموظف صلاحية إجراء معاملات بنكية أو صرف مصروفات دون موافقة الإدارة."
             ),
         )
         + article(
             "ثالثًا: المدة والتعديل",
             p(
-                "يسري ترتيب التكاليف طوال مدة التكليف الأولية البالغة اثني عشر شهرًا من نفاذ ملحقه الفردي، ويُمدَّد أو يُعدَّل بموجب اتفاق مكتوب بين الطرفين."
+                "يسري ترتيب التكاليف طوال مدة التكليف الأولية البالغة اثني عشر (12) شهرًا من نفاذ ملحقه الفردي، ويُمدَّد أو يُعدَّل بموجب اتفاق مكتوب بين الطرفين."
             ),
         )
         + section_label("الاعتماد والنفاذ")
         + p(
-            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخولين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
+            "يصبح هذا المستند نافذًا بعد اعتماده من ممثلي الشركتين المخوَّلين وفق صلاحيات كل منهما، ويُعتد بتاريخ الاعتماد الأخير."
         )
         + sig_block(
             [
-                ("عن شركة أمانة الكلمة", "شهيد الإسلام عبد الرزاق", "Shahidul Islam Abdur Razzak"),
+                (
+                    "عن شركة أمانة الكلمة",
+                    "شهيد الإسلام عبد الرزاق",
+                    "Shahidul Islam Abdur Razzak",
+                ),
                 ("عن شركة إتش إم إس", "هيميل حسن", "Himel Hasan"),
             ]
-        )
+        ),
+        "aalkc",
+        dense=True,
     )
 )
+
+
+def theme_css(prefix: str, t: dict, letterhead: str, pad_top: str, pad_bottom: str) -> str:
+    return f"""
+.page.brand-{prefix} {{
+  background-image: url("{letterhead}");
+  padding: {pad_top} 15mm {pad_bottom} 15mm;
+  --primary: {t['primary']};
+  --primary-soft: {t['primary_soft']};
+  --slate: {t['slate']};
+  --muted: {t['muted']};
+  --rule: {t['rule']};
+  --accent: {t['accent']};
+  --tint: {t['tint']};
+  --panel: {t['panel']};
+}}
+"""
 
 
 CSS = f"""
@@ -726,15 +809,13 @@ CSS = f"""
   margin: 0;
 }}
 
-* {{
-  box-sizing: border-box;
-}}
+* {{ box-sizing: border-box; }}
 
 html, body {{
   margin: 0;
   padding: 0;
   background: #fff;
-  color: {SLATE};
+  color: #3A4B5C;
   font-family: "Noto Naskh Arabic", "Noto Sans Arabic", serif;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -747,8 +828,10 @@ html, body {{
   break-after: page;
   position: relative;
   overflow: hidden;
-  background: #fff url("{letterhead_data_uri()}") center / 100% 100% no-repeat;
-  padding: 37.5mm 15.5mm 31mm 15.5mm;
+  background-color: #fff;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }}
 
 .page:last-child {{
@@ -756,29 +839,29 @@ html, body {{
   break-after: auto;
 }}
 
-.doc-header {{
-  margin-bottom: 4.2mm;
-}}
+{theme_css("aalkc", AALKC, LH_AALKC, "48mm", "52mm")}
+{theme_css("hms", HMS, LH_HMS, "57mm", "54mm")}
+
+.doc-header {{ margin-bottom: 2.8mm; }}
 
 .doc-title {{
-  margin: 0 0 3.2mm;
+  margin: 0 0 2.2mm;
   text-align: center;
-  color: {NAVY};
+  color: var(--primary);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 13.2pt;
+  font-size: 12.2pt;
   font-weight: 700;
-  line-height: 1.55;
-  letter-spacing: 0;
+  line-height: 1.45;
 }}
 
 .meta-panel {{
-  border: 0.6pt solid {RULE};
-  background: linear-gradient(180deg, rgba(10,39,69,0.04), rgba(10,39,69,0.015));
-  border-radius: 2mm;
-  padding: 1.6mm 3mm;
+  border: 0.55pt solid var(--rule);
+  background: var(--panel);
+  border-radius: 1.8mm;
+  padding: 1.2mm 2.8mm;
   display: flex;
   flex-direction: column;
-  gap: 0.8mm;
+  gap: 0.4mm;
 }}
 
 .meta-row {{
@@ -787,26 +870,24 @@ html, body {{
   align-items: baseline;
   gap: 4mm;
   direction: rtl;
-  border-bottom: 0.4pt solid {RULE};
-  padding: 1.1mm 0;
+  border-bottom: 0.35pt solid var(--rule);
+  padding: 1mm 0;
 }}
 
-.meta-row:last-child {{
-  border-bottom: none;
-}}
+.meta-row:last-child {{ border-bottom: none; }}
 
 .meta-label {{
-  color: {NAVY};
+  color: var(--primary);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 9pt;
+  font-size: 8.7pt;
   font-weight: 700;
   white-space: nowrap;
 }}
 
 .meta-value {{
-  color: {NAVY_SOFT};
+  color: var(--primary-soft);
   font-family: "Carlito", "Liberation Sans", "Noto Sans", sans-serif;
-  font-size: 9pt;
+  font-size: 8.7pt;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-align: left;
@@ -815,98 +896,91 @@ html, body {{
 }}
 
 .lead {{
-  margin: 0 0 3.5mm;
-  color: {NAVY_SOFT};
-  font-size: 10.4pt;
-  line-height: 1.75;
+  margin: 0 0 2.4mm;
+  color: var(--primary-soft);
+  font-size: 9.7pt;
+  line-height: 1.65;
   text-align: justify;
   direction: rtl;
 }}
 
 p {{
-  margin: 0 0 2.6mm;
-  font-size: 10.2pt;
-  line-height: 1.78;
+  margin: 0 0 1.8mm;
+  font-size: 9.5pt;
+  line-height: 1.65;
   text-align: justify;
   direction: rtl;
-  color: {SLATE};
+  color: var(--slate);
 }}
 
 .note {{
-  margin-top: 2mm;
-  padding: 2.2mm 3mm;
-  background: {BG_TINT};
-  border-right: 1.6pt solid {GOLD};
-  border-radius: 0 1.2mm 1.2mm 0;
-  color: {MUTED};
-  font-size: 9.3pt;
-  line-height: 1.7;
+  margin-top: 1.6mm;
+  padding: 1.8mm 2.6mm;
+  background: var(--tint);
+  border-right: 1.5pt solid var(--accent);
+  border-radius: 0 1mm 1mm 0;
+  color: var(--muted);
+  font-size: 8.8pt;
+  line-height: 1.65;
 }}
 
-.article {{
-  margin: 0 0 3.4mm;
-}}
+.article {{ margin: 0 0 1.8mm; }}
 
 .article-title {{
-  margin: 0 0 2mm;
+  margin: 0 0 1.2mm;
   direction: rtl;
 }}
 
 .article-title span {{
   display: inline-block;
-  color: {NAVY};
+  color: var(--primary);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 10.6pt;
+  font-size: 9.8pt;
   font-weight: 700;
-  padding: 0.6mm 0 0.8mm;
-  border-bottom: 1.4pt solid {GOLD};
+  padding: 0.3mm 0 0.5mm;
+  border-bottom: 1.2pt solid var(--accent);
 }}
 
-.article-body {{
-  direction: rtl;
-}}
+.article-body {{ direction: rtl; }}
 
 .kv-table {{
-  margin: 2mm 0 2.5mm;
-  border: 0.6pt solid {RULE};
-  border-radius: 2mm;
+  margin: 1.6mm 0 2mm;
+  border: 0.55pt solid var(--rule);
+  border-radius: 1.8mm;
   overflow: hidden;
-  background: rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.78);
 }}
 
 .kv-row {{
   display: grid;
-  grid-template-columns: 1.35fr 0.9fr;
+  /* With direction:rtl, first column is on the right → Arabic label, then value */
+  grid-template-columns: 0.85fr 1.4fr;
   direction: rtl;
-  border-bottom: 0.45pt solid {RULE};
-  min-height: 7.2mm;
+  border-bottom: 0.4pt solid var(--rule);
+  min-height: 5.8mm;
 }}
 
-.kv-row:nth-child(even) {{
-  background: rgba(10, 39, 69, 0.028);
-}}
-
-.kv-row:last-child {{
-  border-bottom: none;
-}}
+.kv-row:nth-child(even) {{ background: var(--tint); }}
+.kv-row:last-child {{ border-bottom: none; }}
 
 .kv-label {{
-  padding: 1.6mm 3mm;
-  color: {NAVY};
+  padding: 1.3mm 2.6mm;
+  color: var(--primary);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 9pt;
+  font-size: 8.6pt;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  border-left: 0.45pt solid {RULE};
-  background: rgba(10, 39, 69, 0.035);
+  border-left: 0.4pt solid var(--rule);
+  background: var(--tint);
+  text-align: right;
 }}
 
 .kv-value {{
-  padding: 1.6mm 3mm;
-  color: {NAVY_SOFT};
-  font-size: 9pt;
+  padding: 1.3mm 2.6mm;
+  color: var(--primary-soft);
+  font-size: 8.7pt;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -928,110 +1002,128 @@ p {{
 
 .premium-list {{
   margin: 0;
-  padding: 0 5mm 0 0;
+  padding: 0 4.5mm 0 0;
   list-style: none;
   direction: rtl;
 }}
 
 .premium-list li {{
   position: relative;
-  margin: 0 0 2mm;
-  padding-right: 4.5mm;
-  font-size: 10.1pt;
-  line-height: 1.72;
+  margin: 0 0 1.2mm;
+  padding-right: 4.2mm;
+  font-size: 9.4pt;
+  line-height: 1.58;
   text-align: justify;
-  color: {SLATE};
+  color: var(--slate);
 }}
 
 .premium-list li::before {{
   content: "";
   position: absolute;
   right: 0;
-  top: 2.4mm;
-  width: 1.7mm;
-  height: 1.7mm;
+  top: 2.2mm;
+  width: 1.55mm;
+  height: 1.55mm;
   border-radius: 50%;
-  background: {GOLD};
-  box-shadow: 0 0 0 0.7mm rgba(168, 137, 90, 0.18);
+  background: var(--accent);
+  box-shadow: 0 0 0 0.6mm color-mix(in srgb, var(--accent) 22%, transparent);
 }}
 
 .section-kicker {{
-  margin: 4mm 0 2.2mm;
+  margin: 2.4mm 0 1.4mm;
   text-align: center;
-  color: {NAVY};
+  color: var(--primary);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 11pt;
+  font-size: 10.2pt;
   font-weight: 700;
-  letter-spacing: 0.04em;
 }}
 
 .section-kicker::before,
 .section-kicker::after {{
   content: "";
   display: inline-block;
-  width: 14mm;
-  height: 0.7pt;
-  background: linear-gradient(90deg, transparent, {GOLD}, transparent);
+  width: 12mm;
+  height: 0.65pt;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
   vertical-align: middle;
-  margin: 0 3mm;
+  margin: 0 2.5mm;
 }}
 
 .sig-grid {{
-  margin-top: 4mm;
+  margin-top: 2.4mm;
+  margin-bottom: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5mm;
+  gap: 4mm;
   direction: rtl;
 }}
 
-.sig-grid:has(.sig-card:only-child) {{
+.sig-grid.single {{
   grid-template-columns: 1fr;
-  max-width: 88mm;
+  max-width: 86mm;
   margin-inline: auto;
 }}
 
 .sig-card {{
-  border: 0.6pt solid {RULE};
-  border-radius: 2mm;
-  padding: 3.5mm 3.5mm 4mm;
-  background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(10,39,69,0.03));
+  border: 0.55pt solid var(--rule);
+  border-radius: 1.8mm;
+  padding: 2.4mm 3mm 2.8mm;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), var(--tint));
   text-align: center;
 }}
 
 .sig-role {{
-  color: {MUTED};
+  color: var(--muted);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 8.5pt;
+  font-size: 8pt;
   font-weight: 700;
-  margin-bottom: 6mm;
+  margin-bottom: 4.2mm;
 }}
 
 .sig-line {{
-  height: 0.55pt;
-  background: {RULE};
-  margin: 0 4mm 3mm;
+  height: 0.5pt;
+  background: var(--rule);
+  margin: 0 3.5mm 2.6mm;
 }}
 
 .sig-name {{
-  color: {NAVY};
+  color: var(--primary);
   font-family: "Noto Kufi Arabic", "Noto Sans Arabic", sans-serif;
-  font-size: 10.2pt;
+  font-size: 9.8pt;
   font-weight: 700;
 }}
 
 .sig-en {{
-  margin-top: 1mm;
-  color: {MUTED};
+  margin-top: 0.8mm;
+  color: var(--muted);
   font-family: "Carlito", "Liberation Sans", "Noto Sans", sans-serif;
-  font-size: 8.4pt;
+  font-size: 8pt;
   letter-spacing: 0.02em;
   direction: ltr;
 }}
+
+/* Dense pages: keep content clear of tall letterhead footers */
+.page.dense .doc-header {{ margin-bottom: 2mm; }}
+.page.dense .doc-title {{ font-size: 11.6pt; margin-bottom: 1.8mm; }}
+.page.dense .lead {{ font-size: 9.2pt; line-height: 1.55; margin-bottom: 1.8mm; }}
+.page.dense p {{ font-size: 9.1pt; line-height: 1.55; margin-bottom: 1.4mm; }}
+.page.dense .article {{ margin-bottom: 1.4mm; }}
+.page.dense .article-title {{ margin-bottom: 0.9mm; }}
+.page.dense .article-title span {{ font-size: 9.4pt; }}
+.page.dense .kv-row {{ min-height: 5.2mm; }}
+.page.dense .kv-label,
+.page.dense .kv-value {{ font-size: 8.2pt; padding: 1mm 2.2mm; }}
+.page.dense .premium-list li {{ font-size: 9pt; line-height: 1.5; margin-bottom: 0.9mm; }}
+.page.dense .section-kicker {{ margin: 1.6mm 0 1mm; font-size: 9.6pt; }}
+.page.dense .sig-grid {{ margin-top: 1.6mm; }}
+.page.dense .sig-card {{ padding: 1.8mm 2.4mm 2mm; }}
+.page.dense .sig-role {{ margin-bottom: 3.2mm; font-size: 7.6pt; }}
+.page.dense .sig-name {{ font-size: 9.2pt; }}
+.page.dense .note {{ font-size: 8.3pt; padding: 1.2mm 2mm; }}
 """
 
 
 def build_html() -> str:
-    body = "\n".join(PAGES)
     return f"""<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -1040,7 +1132,7 @@ def build_html() -> str:
   <style>{CSS}</style>
 </head>
 <body>
-{body}
+{"".join(PAGES)}
 </body>
 </html>
 """
@@ -1068,9 +1160,8 @@ def render_pdf() -> None:
         )
     ARTIFACT.parent.mkdir(parents=True, exist_ok=True)
     ARTIFACT.write_bytes(OUT_PDF.read_bytes())
-    print(f"Wrote {OUT_PDF}")
+    print(f"Wrote {OUT_PDF} ({OUT_PDF.stat().st_size} bytes)")
     print(f"Wrote {ARTIFACT}")
-    print(f"Size: {OUT_PDF.stat().st_size} bytes")
 
 
 if __name__ == "__main__":
